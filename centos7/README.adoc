@@ -82,6 +82,12 @@ Add `yum install` of the `librsvg2-devel` package to the Dockerfile and try agai
 [listing]
 .Bundling is now successful!
 ----
+>docker run -it --rm \
+    -v $PWD:/src \
+    -w /src \
+    tauri:centos7 \
+    /bin/bash -c "cd app && cargo tauri build"
+...
     Bundling regvue_0.1.0_amd64.deb (/src/app/src-tauri/target/release/bundle/deb/regvue_0.1.0_amd64.deb)
     Bundling regvue_0.1.0_amd64.AppImage (/src/app/src-tauri/target/release/bundle/appimage/regvue_0.1.0_amd64.AppImage)    Finished 2 bundles at:
         /src/app/src-tauri/target/release/bundle/deb/regvue_0.1.0_amd64.deb
