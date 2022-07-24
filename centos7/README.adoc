@@ -16,17 +16,22 @@ Build on CentOS/RHEL 7 using Docker.
 
 == Build the Docker Image
 
- docker build -t tauri .
+ git clone https://github.com/rfdonnelly/tauri-builders.git
+ docker build -t tauri:centos7 tauri-builders/centos7
 
 == Build the Tauri App
 
 [source,sh]
 ----
 cd $repo_root
+----
+
+[source,sh]
+----
 docker run -it --rm \
     -v $PWD:/src \
     -w /src \
-    tauri \
+    tauri:centos7 \
     /bin/bash -c "cd app && cargo tauri build"
 ----
 
