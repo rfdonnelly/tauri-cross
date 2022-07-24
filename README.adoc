@@ -1,0 +1,16 @@
+= Builders for Tauri Apps using Docker
+
+Build Tauri apps for various unsupported distros using Docker.
+
+This is mostly to solve the glibc problem where building a Tauri app on a newer distro (with a newer glibc) will not work on older distros (with an older glibc).
+But the opposite works: build your Tauri app on an older distro will work on both the older distro and newer distros.
+
+== CentOS 7
+
+See link:centos7[centos7].
+
+KNOWN ISSUE: The app builds successfully but does not render the page.
+
+== CentOS 8
+
+TBD

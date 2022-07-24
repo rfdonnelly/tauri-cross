@@ -1,0 +1,246 @@
+= Building Tauri for CentOS/RHEL 7
+
+== Problem
+
+Tauri builds an AppImage that bundles all the necessary shared libraries except for glibc.
+Tauri links against the glibc of the build environment.
+For example, building on Ubuntu 22.10 links against glibc 2.35.
+
+CentOS/RHEL provides glibc 2.17 (see https://distrowatch.com/table.php?distribution=redhat).
+
+Attempting to run Regvue Desktop on CentOS/RHEL 7 that was built on Ubuntu 22.10 results in several "GLIBC_X.XX not found" errors (see <<error>>).
+
+== Solution
+
+Build on CentOS/RHEL 7 using Docker.
+
+== Build the Docker Image
+
+ docker build -t tauri .
+
+== Build the Tauri App
+
+[source,sh]
+----
+cd $repo_root
+docker run -it --rm \
+    -v $PWD:/src \
+    -w /src \
+    tauri \
+    /bin/bash -c "cd app && cargo tauri build"
+----
+
+=== Debugging AppImage Failure
+
+[source,sh]
+.On Docker host
+----
+cd $repo_root
+docker run -it --rm \
+    -v $PWD:/src \
+    -w /src \
+    tauri \
+    /bin/bash
+----
+
+[source,sh]
+.In Docker container
+----
+cd app
+cargo tauri build # fails
+----
+
+[listing]
+.Error message
+----
+    Bundling regvue_0.1.0_amd64.AppImage (/src/app/src-tauri/target/release/bundle/appimage/regvue_0.1.0_amd64.AppImage)
+       Error failed to bundle project: error running appimage.sh: error running appimage.sh: `failed to run /src/app/src-tauri/target/release/bundle/appimage/build_appimage.sh`
+----
+
+[source,sh]
+.Debug AppImage build failure
+----
+rm -rf src-tauri/target/release/bundle/appimage/regvue.AppDir
+(cd src-tauri/target/release/bundle/appimage && ./build_appimage.sh) # fails
+----
+
+[listing]
+.Error message
+----
+[gtk/stdout] Copying more libraries
+[gtk/stderr] /root/.cache/tauri/linuxdeploy-plugin-gtk.sh: there is no 'libdir' variable for 'librsvg-2.0' library.
+[gtk/stderr] Please check the 'librsvg-2.0.pc' file is present in $PKG_CONFIG_PATH (you may need to install the appropriate -dev/-devel package).
+----
+
+Try modifying the Dockerfile to install the librsvg-devel package.
+
+Success!
+
+== Run the Tauri App on CentOS 7
+
+The Tauri window comes up but it is blank.
+If I right click, I get a context menu with grayed out items: Back, Forward, Stop and with enabled items: Reload.
+
+== References
+
+https://github.com/tauri-apps/tauri/issues/1355::
+Provides a Dockerfile for building on CentOS7
+
+[appendix]
+[#error]
+== Error Running Regvue Desktop on CentOS/RHEL 7
+
+In this case, Regvue Desktop was built on Ubuntu 22.10 (glibc 2.35).
+
+[source,sh]
+----
+./regvue_0.1.0_amd64.AppImage
+----
+
+[listing]
+----
+regvue: /lib64/libc.so.6: version `GLIBC_2.29' not found (required by regvue)
+regvue: /lib64/libc.so.6: version `GLIBC_2.18' not found (required by regvue)
+regvue: /lib64/libc.so.6: version `GLIBC_2.27' not found (required by regvue)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by regvue)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by regvue)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by regvue)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by regvue)
+regvue: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by regvue)
+regvue: /lib64/libm.so.6: version `GLIBC_2.35' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libm.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libc.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.26' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebkit2gtk-4.0.so.37)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgtk-3.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgtk-3.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgdk-3.so.0)
+regvue: /lib64/libthai.so.0: version `LIBTHAI_0.1.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libpango-1.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libcairo.so.2)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libcairo.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgio-2.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgio-2.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgio-2.0.so.0)
+regvue: /lib64/libm.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libgcc_s.so.1: version `GCC_7.0.0' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.30' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.22' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.26' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libjavascriptcoregtk-4.0.so.18)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libglib-2.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libglib-2.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libglib-2.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libglib-2.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libdbus-1.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libdbus-1.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libcrypto.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libcrypto.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libcrypto.so.3)
+regvue: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicui18n.so.71)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicui18n.so.71)
+regvue: /lib64/libm.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicuuc.so.71)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicuuc.so.71)
+regvue: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicuuc.so.71)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.30' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicuuc.so.71)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicuuc.so.71)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libicuuc.so.71)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.26' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.30' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsystemd.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libxml2.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libxml2.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libxml2.so.2)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libxml2.so.2)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsqlite3.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsqlite3.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsqlite3.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libsqlite3.so.0)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libxslt.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libxslt.so.1)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/liblcms2.so.2)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwoff2dec.so.1.0.2)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwoff2dec.so.1.0.2)
+regvue: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwoff2dec.so.1.0.2)
+regvue: /lib64/libgpg-error.so.0: no version information available (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgcrypt.so.20)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgcrypt.so.20)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgcrypt.so.20)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgstreamer-1.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgstreamer-1.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgstreamer-1.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgstpbutils-1.0.so.0)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgstaudio-1.0.so.0)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgsttag-1.0.so.0)regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgstvideo-1.0.so.0)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libpng16.so.16)
+regvue: /lib64/libz.so.1: version `ZLIB_1.2.9' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libpng16.so.16)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libopenjp2.so.7)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libopenjp2.so.7)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebp.so.7)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwebp.so.7)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libenchant-2.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgmodule-2.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwayland-server.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwayland-server.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwayland-server.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwayland-client.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libepoxy.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libxkbcommon.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwayland-cursor.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libwayland-cursor.so.0)
+regvue: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libpixman-1.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libmount.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libmount.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libselinux.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.30' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libselinux.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libselinux.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libffi.so.8)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libcap.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/liblzma.so.5)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/liblzma.so.5)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libzstd.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libunwind.so.8)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libunwind.so.8)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libdw.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libdw.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgudev-1.0.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libpsl.so.5)
+regvue: /lib64/libc.so.6: version `GLIBC_2.27' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgssapi_krb5.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgssapi_krb5.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libgssapi_krb5.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libevdev.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libXau.so.6)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libblkid.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libelf.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libudev.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libudev.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.28' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libudev.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libudev.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.30' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libudev.so.1)
+regvue: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libunistring.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libunistring.so.2)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libkrb5.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libkrb5.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libkrb5.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libk5crypto.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libk5crypto.so.3)
+regvue: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libkrb5support.so.0)
+regvue: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /home/rdonnell/.mount_/squashfs-root/usr/lib/libkrb5support.so.0)
+----
