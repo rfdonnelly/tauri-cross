@@ -77,14 +77,33 @@ rm -rf src-tauri/target/release/bundle/appimage/regvue.AppDir
 [gtk/stderr] Please check the 'librsvg-2.0.pc' file is present in $PKG_CONFIG_PATH (you may need to install the appropriate -dev/-devel package).
 ----
 
-Try modifying the Dockerfile to install the librsvg-devel package.
+Add `yum install` of the `librsvg2-devel` package to the Dockerfile and try again.
 
-Success!
+[listing]
+.Bundling is now successful!
+----
+    Bundling regvue_0.1.0_amd64.deb (/src/app/src-tauri/target/release/bundle/deb/regvue_0.1.0_amd64.deb)
+    Bundling regvue_0.1.0_amd64.AppImage (/src/app/src-tauri/target/release/bundle/appimage/regvue_0.1.0_amd64.AppImage)    Finished 2 bundles at:
+        /src/app/src-tauri/target/release/bundle/deb/regvue_0.1.0_amd64.deb
+        /src/app/src-tauri/target/release/bundle/appimage/regvue_0.1.0_amd64.AppImage
+----
 
-== Run the Tauri App on CentOS 7
+=== Current Issue
 
-The Tauri window comes up but it is blank.
-If I right click, I get a context menu with grayed out items: Back, Forward, Stop and with enabled items: Reload.
+However, running the Tauri App results in a blank Tauri window and some error messages in the console.
+
+[listing]
+----
+> app/src-tauri/target/release/bundle/appimage/regvue_0.1.0_amd64.AppImage
+libgnutls.so.28: cannot open shared object file: No such file or directory
+Failed to load module: /tmp/.mount_regvueh723d0/usr/lib64/gio/modules/libgiognutls.so
+
+(regvue:3871): GLib-GIO-CRITICAL **: 13:48:04.328: g_dbus_proxy_new_sync: assertion 'G_IS_DBUS_CONNECTION (connection)' failed
+libgnutls.so.28: cannot open shared object file: No such file or directory
+Failed to load module: /tmp/.mount_regvueh723d0/usr/lib64/gio/modules/libgiognutls.so
+libgnutls.so.28: cannot open shared object file: No such file or directory
+Failed to load module: /tmp/.mount_regvueh723d0/usr/lib64/gio/modules/libgiognutls.so
+----
 
 == References
 
