@@ -82,7 +82,7 @@ Add `yum install` of the `librsvg2-devel` package to the Dockerfile and try agai
 [listing]
 .Bundling is now successful!
 ----
->docker run -it --rm \
+> docker run -it --rm \
     -v $PWD:/src \
     -w /src \
     tauri:centos7 \
