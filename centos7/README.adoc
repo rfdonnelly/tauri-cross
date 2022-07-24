@@ -111,6 +111,52 @@ libgnutls.so.28: cannot open shared object file: No such file or directory
 Failed to load module: /tmp/.mount_regvueh723d0/usr/lib64/gio/modules/libgiognutls.so
 ----
 
+The AppImage requires and bundles `usr/lib64/gio/modules/libgiognutls.so`.
+This requires `libgnutls.so.28` which is not bundled.
+This is found in `/lib64/` in CentOS 7 which the bundler seems not touch.
+The bundler seems to only bundle things under `/usr/` and maybe treats everything under `/` as "system"?
+
+I tried extracting the AppImage.
+
+[source,sh]
+----
+app/src-tauri/target/release/bundle/appimage/regvue_0.1.0_amd64.AppImage --appimage-extract
+mv squashfs-root .mount_regvue
+----
+
+Then manually copying `/lib64/libgnutls.so.28` out of the CentOS 7 Docker container into the extracted AppImage.
+
+[source,sh]
+----
+mkdir .mount_regvue/lib64
+cp /lib64/libgnutls.so.28 .mount_regvue/lib64
+----
+
+Then I tried running the extracted AppImage.
+
+[source,sh]
+----
+env TMPDIR=$PWD $PWD/.mount_regvue/AppRun
+----
+
+And got different errors.
+
+[listing]
+----
+libnettle.so.4: cannot open shared object file: No such file or directory
+Failed to load module: /home/rfdonnelly/repos/registers/regvue/.mount_regvue/usr/lib64/gio/modules/libgiognutls.so
+----
+
+So I tried copying all of `/lib64/*` out of the container into the extracted AppImage (except for libc) and got yet more errors.
+
+[listing]
+----
+regvue: /home/rfdonnelly/repos/registers/regvue/.mount_regvue/lib64/libuuid.so.1: version `UUID_2.31' not found (required by /lib/x86_64-linux-gnu/libfontconfig.so.1)
+regvue: /home/rfdonnelly/repos/registers/regvue/.mount_regvue/lib64/libz.so.1: version `ZLIB_1.2.9' not found (required by /lib/x86_64-linux-gnu/libpng16.so.16)
+----
+
+So these libraries are present but we now have a versioning problem...
+
 == References
 
 https://github.com/tauri-apps/tauri/issues/1355::
