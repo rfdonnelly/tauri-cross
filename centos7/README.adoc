@@ -38,22 +38,24 @@ docker run -it --rm \
 === Debugging AppImage Failure
 
 [source,sh]
-.On Docker host
+.Run on the Docker host
 ----
 cd $repo_root
 docker run -it --rm \
     -v $PWD:/src \
     -w /src \
-    tauri \
+    tauri:centos7 \
     /bin/bash
 ----
 
 [source,sh]
-.In Docker container
+.Run in Docker container
 ----
 cd app
 cargo tauri build # fails
 ----
+
+==== Debugging AppImage Bundling Failure
 
 [listing]
 .Error message
@@ -94,9 +96,11 @@ Add `yum install` of the `librsvg2-devel` package to the Dockerfile and try agai
         /src/app/src-tauri/target/release/bundle/appimage/regvue_0.1.0_amd64.AppImage
 ----
 
-=== Current Issue
+==== Debugging Missing Shared Object
 
 However, running the Tauri App results in a blank Tauri window and some error messages in the console.
+
+I suspect the missing shared object and the blank window issues are unrelated.
 
 [listing]
 ----
@@ -155,7 +159,77 @@ regvue: /home/rfdonnelly/repos/registers/regvue/.mount_regvue/lib64/libuuid.so.1
 regvue: /home/rfdonnelly/repos/registers/regvue/.mount_regvue/lib64/libz.so.1: version `ZLIB_1.2.9' not found (required by /lib/x86_64-linux-gnu/libpng16.so.16)
 ----
 
-So these libraries are present but we now have a versioning problem...
+So I tried removing these.
+I got a different error.
+I then removed the libraries the new error complained about an so on until all the errors were gone.
+Here is the final list of additional libraries I had to manually add to the extracted AppImage from the CentOS 7 Docker container.
+
+[listing]
+---
+lib64/libblkid.so.1
+lib64/libffi.so.6
+lib64/libgcc_s.so.1
+lib64/libgio-2.0.so.0
+lib64/libglib-2.0.so.0
+lib64/libgmodule-2.0.so.0
+lib64/libgmp.so.10
+lib64/libgnutls.so.28
+lib64/libgobject-2.0.so.0
+lib64/libhogweed.so.2
+lib64/libmount.so.1
+lib64/libnettle.so.4
+lib64/libp11-kit.so.0
+lib64/libpcre.so.1
+lib64/libresolv.so.2
+lib64/libselinux.so.1
+lib64/libtasn1.so.6
+----
+
+This could likely be further reduced by using an additive debug method where libraries are selectively added per error message.
+Instead of subtractive debug where all are added then selectively removed per error message.
+
+I can now run the extracted AppImage w/o errors.
+However, the blank window issue persists.
+
+==== Debugging the Blank Window
+
+Try compiling in debug mode to enable the WebView dev console.
+
+[source,sh]
+----
+docker run -it --rm \
+    -v $PWD:/src \
+    -w /src \
+    tauri:centos7 \
+    /bin/bash -c "cd app && cargo tauri build --debug"
+----
+
+[source,sh]
+.Run the AppImage
+----
+app/src-tauri/target/debug/bundle/appimage/regvue_0.1.0_amd64.AppImage
+----
+
+[listing]
+.stdout
+----
+libgnutls.so.28: cannot open shared object file: No such file or directory
+Failed to load module: /tmp/.mount_regvueJYFe2E/usr/lib64/gio/modules/libgiognutls.so
+
+(regvue:11647): GLib-GIO-CRITICAL **: 19:32:20.707: g_dbus_proxy_new_sync: assertion 'G_IS_DBUS_CONNECTION (connection)' failed
+----
+
+The missing `libgnutls.so.28` issue persists but I now have the "Inspect Element" option when I right click the WebView.
+
+The Console tab in the dev tools shows the following error:
+
+[listing]
+----
+SyntaxError: No identifiers allowed directly after numeric literal
+----
+
+I can't find the source location of the error.
+But I suspect this is due to the use of BigInt literals like `1n` which is not likely supported by this old of a WebView.
 
 == References
 
