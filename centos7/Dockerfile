@@ -1,6 +1,6 @@
 # Adapted from: https://github.com/tauri-apps/tauri/issues/1355#issuecomment-896434917
 
-FROM centos:centos7.3.1611
+FROM centos:centos7.9.2009
 
 # Install dependencies
 RUN \
