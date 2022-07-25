@@ -34,7 +34,7 @@ Build the CentOS 7 Tauri builder
 
 Build the Tauri app
 
- docker run -it --rm \                                                                                                                                                                                 rfdonnelly@hyperion /home/rfdonnelly/tmp/tauri-app
+ docker run -it --rm \
      -v $PWD:/src \
      -w /src \
      tauri:centos7 \
