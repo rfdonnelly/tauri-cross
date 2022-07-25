@@ -7,9 +7,42 @@ But the opposite works: build your Tauri app on an older distro will work on bot
 
 == CentOS 7
 
-See link:centos7[centos7].
+NOTE: The app builds and runs successfully but complains about missing `libgnutls.so.28`.
+This seems to be benign.
 
-KNOWN ISSUE: The app builds successfully but does not render the page.
+Create a Tauri app
+
+ # Select the default for all prompts (just keeping pressing Enter)
+ npm create tauri-app
+
+Install the dependencies
+
+ cd tauri-app
+ npm install
+
+Modify the Tauri bundle identifer
+
+ # Edit src-tauri/tauri.conf.json and change the value of tauri.bundle.identifier to "test"
+ vim src-tauri/tauri.conf.json
+
+Build the CentOS 7 Tauri builder
+
+ git clone https://github.com/rfdonnelly/tauri-builders.git
+ docker build -t tauri:centos7 tauri-builders/centos7
+
+Build the Tauri app
+
+ docker run -it --rm \                                                                                                                                                                                 rfdonnelly@hyperion /home/rfdonnelly/tmp/tauri-app
+     -v $PWD:/src \
+     -w /src \
+     tauri \
+     /bin/bash -c "cargo tauri build --debug"
+
+Run the Tauri app
+
+ src-tauri/target/debug/bundle/appimage/tauri-app_0.1.0_amd64.AppImage
+
+See link:centos7[centos7] for more information.
 
 == CentOS 8
 
