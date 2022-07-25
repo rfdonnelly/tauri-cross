@@ -3,7 +3,7 @@
 Build Tauri apps for various unsupported distros using Docker.
 
 This is mostly to solve the glibc problem where building a Tauri app on a newer distro (with a newer glibc) will not work on older distros (with an older glibc).
-But the opposite works: build your Tauri app on an older distro will work on both the older distro and newer distros.
+But the opposite works: building a Tauri app on an older distro will work on both the older distro and newer distros.
 
 The AppImage best practices capture this well in https://docs.appimage.org/reference/best-practices.html#binaries-compiled-on-old-enough-base-system[Binaries compiled on old enough base system].
 
