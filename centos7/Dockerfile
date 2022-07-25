@@ -1,3 +1,5 @@
+# Adapted from: https://github.com/tauri-apps/tauri/issues/1355#issuecomment-896434917
+
 FROM centos:centos7.3.1611
 
 # Install dependencies
@@ -13,10 +15,7 @@ RUN \
         gcc-c++ \
         make \
         file \
-        librsvg2-devel \
-        # for scp transfer of build
-        openssh-clients \
-        openssh
+        librsvg2-devel
 
 # Install NVM
 RUN \
