@@ -22,7 +22,7 @@ Install the dependencies
  cd tauri-app
  npm install
 
-Modify the Tauri bundle identifer
+Modify the Tauri bundle identifier
 
  # Edit src-tauri/tauri.conf.json and change the value of tauri.bundle.identifier to "test"
  vim src-tauri/tauri.conf.json
