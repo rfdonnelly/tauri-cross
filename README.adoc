@@ -37,6 +37,7 @@ Build the Tauri app
  docker run -it --rm \
      -v $PWD:/src \
      -w /src \
+     -u $(id -u):$(id -g) \
      tauri:centos7 \
      /bin/bash -c "cargo tauri build --debug"
 

@@ -1,11 +1,16 @@
 # Adapted from: https://github.com/tauri-apps/tauri/issues/1355#issuecomment-896434917
 
-FROM centos:centos7.9.2009
+ARG CENTOS_VERSION=7.9.2009
+FROM centos:$CENTOS_VERSION
+
+ARG NVM_VERSION=0.39.2
+ARG NODE_VERSION=16.18.0
+ARG TAURI_VERSION=1.1.1
 
 # Install dependencies
 RUN \
     yum install -y \
-        # notice I'm using an old version of webkit. It works!
+        # This is an older version of webkit but it works.
         webkitgtk4-devel \
         openssl-devel \
         curl \
@@ -17,27 +22,28 @@ RUN \
         file \
         librsvg2-devel
 
+RUN useradd -u 1000 docker
+USER docker
+ENV HOME=/home/docker
+
 # Install NVM
 RUN \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v$NVM_VERSION/install.sh | bash \
     && source $HOME/.nvm/nvm.sh \
-    && nvm install 14 --latest-npm \
+    && nvm install $NODE_VERSION \
     && nvm use node
 
 # Install Rust
 RUN \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
+ENV PATH=$HOME/.nvm/versions/node/v$NODE_VERSION/bin:$PATH
+ENV PATH=$HOME/.cargo/bin:$PATH
+
 # Install Tauri CLI
 RUN \
-    source $HOME/.cargo/env \
     # do not use downloaded packages of tauri - you must build it yourself in this environment for correct GLIBC version
-    && cargo install tauri-cli --vers 1.0.4
-    # NOTE: tauri-macros has nothing to install (no binaries) so this isn't needed
-    # && cargo install tauri-macros --vers 1.0.4
-
-ENV PATH=/root/.nvm/versions/node/v14.20.0/bin:$PATH
-ENV PATH=/root/.cargo/bin:$PATH
+    cargo install tauri-cli --version $TAURI_VERSION
 
 # now instead you build your appimage like:
 # cargo tauri build --debug --verbose
