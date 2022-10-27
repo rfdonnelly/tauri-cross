@@ -1,4 +1,4 @@
-= Builders for Tauri Apps using Docker
+= Tauri Cross Compiler for Red Hat Enterprise Linux
 
 Build Tauri apps for various unsupported distros using Docker.
 
@@ -7,30 +7,15 @@ But the opposite works: building a Tauri app on an older distro will work on bot
 
 The AppImage best practices capture this well in https://docs.appimage.org/reference/best-practices.html#binaries-compiled-on-old-enough-base-system[Binaries compiled on old enough base system].
 
-== CentOS 7
+== RHEL 7 via CentOS 7
 
 NOTE: The app builds and runs successfully but complains about missing `libgnutls.so.28`.
 This seems to be benign.
 
-Create a Tauri app
+Build the CentOS 7 Tauri cross compiler image
 
- # Select the default for all prompts (just keeping pressing Enter)
- npm create tauri-app
-
-Install the dependencies
-
- cd tauri-app
- npm install
-
-Modify the Tauri bundle identifier
-
- # Edit src-tauri/tauri.conf.json and change the value of tauri.bundle.identifier to "test"
- vim src-tauri/tauri.conf.json
-
-Build the CentOS 7 Tauri builder
-
- git clone https://github.com/rfdonnelly/tauri-builders.git
- docker build -t tauri:centos7 tauri-builders/centos7
+ git clone https://github.com/rfdonnelly/tauri-cross.git
+ docker build -t tauri:centos7 tauri-cross/centos7
 
 Build the Tauri app
 
@@ -47,12 +32,12 @@ Run the Tauri app
 
 See link:centos7[centos7] for more information.
 
-== Rocky Linux 8
+== RHEL 8 via Rocky Linux 8
 
-Build the Rocky Linux 8 Tauri builder
+Build the Rocky Linux 8 Tauri cross compiler image
 
- git clone https://github.com/rfdonnelly/tauri-builders.git
- docker build -t tauri:rocky8 tauri-builders/rocky8
+ git clone https://github.com/rfdonnelly/tauri-cross.git
+ docker build -t tauri:rocky8 tauri-cross/rocky8
 
 Build the Tauri app
 
@@ -62,3 +47,42 @@ Build the Tauri app
      -u $(id -u):$(id -g) \
      tauri:rocky8 \
      /bin/bash -c "cargo tauri build --debug"
+
+Run the Tauri app
+
+ src-tauri/target/debug/bundle/appimage/tauri-app_0.1.0_amd64.AppImage
+
+== Full Example
+
+Create a Tauri app
+
+ # Select the default for all prompts (just keeping pressing Enter)
+ npm create tauri-app
+
+Install the dependencies
+
+ cd tauri-app
+ npm install
+
+Modify the Tauri bundle identifier
+
+ # Edit src-tauri/tauri.conf.json and change the value of tauri.bundle.identifier to "test"
+ vim src-tauri/tauri.conf.json
+
+Build the CentOS 7 Tauri cross compiler image
+
+ git clone https://github.com/rfdonnelly/tauri-cross.git
+ docker build -t tauri:centos7 tauri-cross/centos7
+
+Build the Tauri app
+
+ docker run -it --rm \
+     -v $PWD:/src \
+     -w /src \
+     -u $(id -u):$(id -g) \
+     tauri:centos7 \
+     /bin/bash -c "cargo tauri build --debug"
+
+Run the Tauri app
+
+ src-tauri/target/debug/bundle/appimage/tauri-app_0.1.0_amd64.AppImage
