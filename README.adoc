@@ -1,6 +1,6 @@
 = Tauri Cross Compiler for Red Hat Enterprise Linux
 
-Build Tauri apps for various unsupported distros using Docker.
+Build Tauri apps for Red Hat Enterprise Linux using Docker.
 
 This is mostly to solve the glibc problem where building a Tauri app on a newer distro (with a newer glibc) will not work on older distros (with an older glibc).
 But the opposite works: building a Tauri app on an older distro will work on both the older distro and newer distros.
