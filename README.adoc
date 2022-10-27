@@ -47,6 +47,18 @@ Run the Tauri app
 
 See link:centos7[centos7] for more information.
 
-== CentOS 8
+== Rocky Linux 8
 
-TBD
+Build the Rocky Linux 8 Tauri builder
+
+ git clone https://github.com/rfdonnelly/tauri-builders.git
+ docker build -t tauri:rocky8 tauri-builders/rocky8
+
+Build the Tauri app
+
+ docker run -it --rm \
+     -v $PWD:/src \
+     -w /src \
+     -u $(id -u):$(id -g) \
+     tauri:rocky8 \
+     /bin/bash -c "cargo tauri build --debug"
